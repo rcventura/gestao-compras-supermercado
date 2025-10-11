@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "350307662606",
+    "project_id": "supermarketshoppinglist-93eaf",
+    "storage_bucket": "supermarketshoppinglist-93eaf.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:350307662606:android:fed4bdfd341b1d9f37355f",
+        "android_client_info": {
+          "package_name": "com.example.minhalistadecompras"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDx9arh86QgDvfniq2wEAVztYfoTAmN6IY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:350307662606:android:d5cd3f49e04e664f37355f",
+        "android_client_info": {
+          "package_name": "com.mycompany.supermarketshoppinglistapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDx9arh86QgDvfniq2wEAVztYfoTAmN6IY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
