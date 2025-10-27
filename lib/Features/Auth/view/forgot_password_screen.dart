@@ -1,18 +1,60 @@
 import 'package:flutter/material.dart';
+import 'package:minhalistadecompras/Helper/validator.dart';
+import 'package:provider/provider.dart';
 import 'login_screen.dart';
+import '../view_model/auth_view_model.dart';
 
 class ForgotPassword extends StatelessWidget {
-  ForgotPassword({super.key});
+  const ForgotPassword({super.key});
 
+    @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => AuthViewModel(),
+      child: const _ForgotPasswordContent(),
+    );
+  }
+
+}
+
+class _ForgotPasswordContent extends StatefulWidget {
+  const _ForgotPasswordContent();
+
+  @override
+  State<_ForgotPasswordContent> createState() => _ForgotPasswordContentContentState();
+}
+
+class _ForgotPasswordContentContentState extends State<_ForgotPasswordContent> {
   final _formKey = GlobalKey<FormState>();
-  void _resetPassword() {
-    if (_formKey.currentState!.validate()) {}
+  final emailController = TextEditingController();
+  
+  @override
+  void dispose() {
+    emailController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _sendResetPassword(AuthViewModel viewModel, String email) async {
+      if (_formKey.currentState!.validate()) {
+      final success = await viewModel.resetPassword(email);
+      await Future.delayed(const Duration(seconds: 1));
+      if (success && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => LoginScreen()),
+        );
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<AuthViewModel>();
+    final validatorHelper = Validator();
     return Scaffold(
-      body: Stack(
+      body: Form(
+        key: _formKey,
+      child: Stack(
         children: [
           // Gradient Background
           Container(
@@ -99,6 +141,7 @@ class ForgotPassword extends StatelessWidget {
                       child: Column(
                         children: [
                           TextFormField(
+                            controller: emailController,
                             decoration: InputDecoration(
                               labelText: 'Email',
                               prefixIcon: Icon(
@@ -116,21 +159,16 @@ class ForgotPassword extends StatelessWidget {
                                 ),
                               ),
                             ),
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Campo Obrigatório';
-                              }
-                              return null;
-                            },
+                            validator: validatorHelper.validarEmail,
                           ),
                           const SizedBox(height: 30),
                           SizedBox(
                             width: double.infinity,
                             height: 50,
                             child: ElevatedButton(
-                              onPressed: () {
-                                _resetPassword();
-                              },
+                              onPressed: viewModel.isLoading 
+                                ? null
+                                : () => _sendResetPassword(viewModel, emailController.text),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Color(0xFF2ECC71),
                                 shape: RoundedRectangleBorder(
@@ -187,6 +225,7 @@ class ForgotPassword extends StatelessWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

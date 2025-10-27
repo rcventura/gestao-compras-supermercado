@@ -1,43 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:minhalistadecompras/Features/Home/view_model/home_view_model.dart';
+import 'package:provider/provider.dart';
 
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider(
+      create: (_) => HomeViewModel(),
+      child: const _HomeScreenContent(),
+    );
+  }
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenContent extends StatefulWidget {
+  const _HomeScreenContent({super.key});
+
+  @override
+  State<_HomeScreenContent> createState() => _HomeScreenContentState();
+}
+
+class _HomeScreenContentState extends State<_HomeScreenContent> {
   final user = FirebaseAuth.instance.currentUser;
+  final viewModel = HomeViewModel();
 
   // Dados de exemplo para as listas de compras
-  final List<Map<String, dynamic>> shoppingLists = [
-    {
-      'title': 'Compras do Mês',
-      'items': 15,
-      'total': 450.00,
-      'date': DateTime.now(),
-      'icon': Icons.shopping_cart,
-      'color': Color(0xFF2ECC71),
-    },
-    {
-      'title': 'Feira da Semana',
-      'items': 8,
-      'total': 120.50,
-      'date': DateTime.now().subtract(Duration(days: 2)),
-      'icon': Icons.local_grocery_store,
-      'color': Color(0xFF3498DB),
-    },
-    {
-      'title': 'Produtos de Limpeza',
-      'items': 6,
-      'total': 85.90,
-      'date': DateTime.now().subtract(Duration(days: 5)),
-      'icon': Icons.cleaning_services,
-      'color': Color(0xFF9B59B6),
-    },
-  ];
+
 
   void _logout() async {
     await FirebaseAuth.instance.signOut();
@@ -54,11 +44,13 @@ class _HomeScreenState extends State<HomeScreen> {
           borderRadius: BorderRadius.circular(20),
         ),
         title: Row(
+          spacing: 10.0,
           children: [
             CircleAvatar(
               backgroundColor: Color(0xFF2ECC71),
               radius: 25,
-              child: Text(                
+              child: Text(
+                
                 user?.email?.substring(0, 1).toUpperCase() ?? 'U',
                 style: TextStyle(
                   fontSize: 24,
@@ -215,7 +207,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildStatCard('Listas', '${shoppingLists.length}', Icons.list_alt),
+                    _buildStatCard('Listas', '${viewModel.shoppingLists.length}', Icons.list_alt),
                     _buildStatCard('Itens', '29', Icons.shopping_basket),
                     _buildStatCard('Gasto', 'R\$ 656', Icons.attach_money),
                   ],
@@ -254,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
           SizedBox(height: 12),
 
           // Lista de compras
-          ...shoppingLists.map((list) => _buildShoppingListCard(list)),
+          ...viewModel.shoppingLists.map((list) => _buildShoppingListCard(list)),
 
           SizedBox(height: 16),
 

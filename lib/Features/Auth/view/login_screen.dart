@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:minhalistadecompras/Features/Auth/view/forgot_password_screen.dart';
-import 'package:minhalistadecompras/Features/Home/home_screen.dart';
+import 'package:minhalistadecompras/Features/Home/view/home_screen.dart';
+import 'package:minhalistadecompras/Helper/validator.dart';
 import 'package:provider/provider.dart';
 import 'register_account_screen.dart';
 import '../view_model/auth_view_model.dart';
@@ -20,31 +21,52 @@ class LoginScreen extends StatelessWidget {
 class _LoginScreenContent extends StatefulWidget {
   const _LoginScreenContent();
 
+
   @override
   State<_LoginScreenContent> createState() => _LoginScreenContentState();
 }
 
 class _LoginScreenContentState extends State<_LoginScreenContent> {
   final _formKey = GlobalKey<FormState>();
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
 
-
-Future<void> _signIn(AuthViewModel viewModel) async {
-  if(_formKey.currentState!.validate()) {
-    print('Entrou em _SignIn');
-    final success = await viewModel.signIn();
-
-    await Future.delayed(const Duration(seconds: 1));
-
-if(success && mounted) {
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(builder: (context) => HomeScreen() ));
-}
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
+    super.dispose();
   }
-}
+  
+  // Alternar visibilidade da senha
+  void togglePasswordVisibility()  {
+    setState(() {
+   _obscurePassword = !_obscurePassword;      
+    });
+  }
+
+  Future<void> _signIn(AuthViewModel viewModel) async {
+    if (_formKey.currentState!.validate()) {
+      final success = await viewModel.signIn(emailController.text.trim(), passwordController.text.trim());
+      await Future.delayed(const Duration(seconds: 1));
+      if (success && mounted) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<AuthViewModel>();
+    final validatorHelper = Validator();
     return Scaffold(
       body: Form(
         key: _formKey,
@@ -136,7 +158,7 @@ if(success && mounted) {
                         child: Column(
                           children: [
                             TextFormField(
-                              controller: viewModel.emailController,
+                              controller: emailController,
                               decoration: InputDecoration(
                                 labelText: 'Email',
                                 prefixIcon: Icon(
@@ -154,13 +176,13 @@ if(success && mounted) {
                                   ),
                                 ),
                               ),
-                              validator: viewModel.validateEmail,
+                              validator: validatorHelper.validarEmail,
                             ),
 
                             const SizedBox(height: 16),
                             TextFormField(
-                              controller: viewModel.passwordController,
-                              obscureText: viewModel.obscurePassword,
+                              controller: passwordController,
+                              obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Senha',
                                 prefixIcon: Icon(
@@ -168,9 +190,9 @@ if(success && mounted) {
                                   color: Color(0xFF2ECC71),
                                 ),
                                 suffixIcon: GestureDetector(
-                                  onTap: viewModel.togglePasswordVisibility,
+                                  onTap: togglePasswordVisibility,
                                   child: Icon(
-                                    viewModel.obscurePassword
+                                    _obscurePassword
                                         ? Icons.visibility_rounded
                                         : Icons.visibility_off_rounded,
                                     color: Colors.grey,
@@ -187,16 +209,16 @@ if(success && mounted) {
                                   ),
                                 ),
                               ),
-                              validator: viewModel.validatePassword,
+                              validator: validatorHelper.validatePassword,
                             ),
                             const SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,
                               height: 50,
                               child: ElevatedButton(
-                                onPressed: viewModel.isLoading 
-                                ? null
-                                : () => _signIn(viewModel),
+                                onPressed: viewModel.isLoading
+                                    ? null
+                                    : () => _signIn(viewModel),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Color(0xFF2ECC71),
                                   shape: RoundedRectangleBorder(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:minhalistadecompras/Helper/validator.dart';
 import 'package:provider/provider.dart';
 import 'login_screen.dart';
 import '../view_model/auth_view_model.dart';
@@ -26,14 +27,34 @@ class _RegistrarAccountContent extends StatefulWidget {
 class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
   final TapGestureRecognizer _tapRecognizer = TapGestureRecognizer();
   final _formKey = GlobalKey<FormState>();
-
-  // Controller para o nome (não está no ViewModel padrão, vamos criar aqui)
-  
+  final nameController = TextEditingController();
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
+  final confirmPasswordController = TextEditingController();
+  bool _obscurePassword = true;
+  bool _obscureConfirmPassword = true;
 
   @override
   void dispose() {
     _tapRecognizer.dispose();
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    confirmPasswordController.dispose();
     super.dispose();
+  }
+
+    // Alternar visibilidade da senha
+  void togglePasswordVisibility() {
+    setState(() {
+  _obscurePassword = !_obscurePassword;
+});
+  }
+
+  void toggleConfirmPasswordVisibility() {
+    setState(() {
+  _obscureConfirmPassword = !_obscureConfirmPassword;
+});
   }
 
   Future<void> _createAccount(AuthViewModel viewModel) async {
@@ -79,6 +100,7 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<AuthViewModel>();
+    final validatorHelper = Validator();
 
     return Scaffold(
       body: Form(
@@ -172,7 +194,7 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
                           children: [
                             // Campo Nome
                             TextFormField(
-                              controller: viewModel.nameController,
+                              controller: nameController,
                               decoration: InputDecoration(
                                 labelText: 'Nome Completo',
                                 prefixIcon: const Icon(
@@ -201,7 +223,7 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
 
                             // Campo Email
                             TextFormField(
-                              controller: viewModel.emailController,
+                              controller: emailController,
                               keyboardType: TextInputType.emailAddress,
                               decoration: InputDecoration(
                                 labelText: 'Email',
@@ -220,14 +242,14 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
                                   ),
                                 ),
                               ),
-                              validator: viewModel.validateEmail,
+                              validator: validatorHelper.validarEmail,
                             ),
                             const SizedBox(height: 16),
 
                             // Campo Senha
                             TextFormField(
-                              controller: viewModel.passwordController,
-                              obscureText: viewModel.obscurePassword,
+                              controller: passwordController,
+                              obscureText: _obscurePassword,
                               decoration: InputDecoration(
                                 labelText: 'Senha',
                                 prefixIcon: const Icon(
@@ -235,11 +257,11 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
                                   color: Color(0xFF2ECC71),
                                 ),
                                 suffixIcon: GestureDetector(
-                                  onTap: viewModel.togglePasswordVisibility,
+                                  onTap: togglePasswordVisibility,
                                   child: Icon(
-                                    viewModel.obscurePassword
-                                        ? Icons.visibility_off_rounded
-                                        : Icons.visibility_rounded,
+                                    _obscurePassword
+                                          ? Icons.visibility_rounded
+                                        : Icons.visibility_off_rounded,
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -254,14 +276,14 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
                                   ),
                                 ),
                               ),
-                              validator: viewModel.validatePassword,
+                              validator: validatorHelper.validatePassword,
                             ),
                             const SizedBox(height: 16),
 
                             // Campo Confirmar Senha
                             TextFormField(
-                              controller: viewModel.confirmPasswordController,
-                              obscureText: viewModel.obscureConfirmPassword,
+                              controller: confirmPasswordController,
+                              obscureText: _obscureConfirmPassword,
                               decoration: InputDecoration(
                                 labelText: 'Confirmar Senha',
                                 prefixIcon: const Icon(
@@ -269,11 +291,11 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
                                   color: Color(0xFF2ECC71),
                                 ),
                                 suffixIcon: GestureDetector(
-                                  onTap: viewModel.toggleConfirmPasswordVisibility,
+                                  onTap: toggleConfirmPasswordVisibility,
                                   child: Icon(
-                                    viewModel.obscureConfirmPassword
-                                        ? Icons.visibility_off_rounded
-                                        : Icons.visibility_rounded,
+                                    _obscureConfirmPassword
+                                        ? Icons.visibility_rounded
+                                        : Icons.visibility_off_rounded,
                                     color: Colors.grey,
                                   ),
                                 ),
@@ -288,7 +310,7 @@ class _RegistrarAccountContentState extends State<_RegistrarAccountContent> {
                                   ),
                                 ),
                               ),
-                              validator: viewModel.validateConfirmPassword,
+                              validator:  (value) => validatorHelper.validateConfirmPassword(value, passwordController),
                             ),
 
                             // Mostrar erro se houver
