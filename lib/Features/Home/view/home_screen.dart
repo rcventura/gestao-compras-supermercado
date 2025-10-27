@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:minhalistadecompras/Features/Auth/view/login_screen.dart';
 import 'package:minhalistadecompras/Features/Home/view_model/home_view_model.dart';
 import 'package:provider/provider.dart';
 
@@ -26,13 +27,12 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   final user = FirebaseAuth.instance.currentUser;
   final viewModel = HomeViewModel();
 
-  // Dados de exemplo para as listas de compras
-
-
   void _logout() async {
-    await FirebaseAuth.instance.signOut();
-    if (mounted) {
-      Navigator.pushReplacementNamed(context, '/login');
+    final success = await viewModel.signOut();
+    if (success) {
+      Navigator.pushAndRemoveUntil(context,
+       MaterialPageRoute(builder: (context) => LoginScreen()),
+      (route) => false);
     }
   }
 
