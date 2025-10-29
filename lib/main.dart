@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:minhalistadecompras/Features/Auth/view/login_screen.dart';
+import 'package:minhalistadecompras/features/Auth/view/login_screen.dart';
 import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 

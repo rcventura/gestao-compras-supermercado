@@ -45,26 +45,28 @@ class AuthViewModel extends ChangeNotifier {
 
   // REALIZAR LOGIN
   Future<bool> signIn(String email, String password) async {
+    _isLoading = true;
     try {
-      await _authService.signIn(
-        email: email,
-        password: password,
-      );
+      await _authService.signIn(email: email, password: password);
       notifyListeners();
       return true;
     } catch (e) {
       print('Erro ao logar: $e');
+      _isLoading = false;
+      _errorMessage = 'Usuário ou senha incorreto';
       return false;
     }
   }
 
   // RESET PASSWORD
   Future<bool> resetPassword(String email) async {
+    _isLoading = true;
     try {
       await _authService.sendPasswordResetEmail(email: email);
       notifyListeners();
       return true;
     } catch (e) {
+      _isLoading = false;
       return false;
     }
   }
