@@ -19,7 +19,7 @@ class Validator extends ChangeNotifier {
 // VALIDAR CAMPO EMAIL
   String? validarEmail(String? value) {
     if (value == null || value.isEmpty) {
-      return 'Campo Obrigatório';
+      return 'Campo obrigatório';
     }
      if (value.length < 3) {
       return 'Nome deve ter pelo menos 3 caracteres';
@@ -53,4 +53,23 @@ class Validator extends ChangeNotifier {
     return null;
   }
 
+
+  // VALIDAR NOME DA LISTA  
+  String? validateListName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Campo obrigatório';
+    }
+    if (value.length < 3) {
+      return 'Nome deve ter pelo menos 3 caracteres';
+    }
+    return null;
+  }
+
+    // VALIDATE MARKET NAME
+  String? validateMarketName(String? value) {
+    if (value == null || value.isEmpty) {
+      return 'Campo obrigatório';
+    }
+    return null;
+  }
 }

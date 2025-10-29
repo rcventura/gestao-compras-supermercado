@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:minhalistadecompras/Features/Auth/view/login_screen.dart';
-import 'package:minhalistadecompras/Features/Home/view_model/home_view_model.dart';
+import 'package:minhalistadecompras/Components/loading.dart';
+import 'package:minhalistadecompras/features/Auth/view/login_screen.dart';
+import 'package:minhalistadecompras/features/Home/model/shopping_list_model.dart';
+import 'package:minhalistadecompras/features/Home/view_model/home_view_model.dart';
+import 'package:minhalistadecompras/helper/validator.dart';
 import 'package:provider/provider.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -17,32 +19,315 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _HomeScreenContent extends StatefulWidget {
-  const _HomeScreenContent({super.key});
+  const _HomeScreenContent();
 
   @override
   State<_HomeScreenContent> createState() => _HomeScreenContentState();
 }
 
-class _HomeScreenContentState extends State<_HomeScreenContent> {
-  final user = FirebaseAuth.instance.currentUser;
-  final viewModel = HomeViewModel();
+enum CreateLocation {
+  casa('Casa'),
+  mercado('Mercado');
 
-  void _logout() async {
-    final success = await viewModel.signOut();
-    if (success) {
-      Navigator.pushAndRemoveUntil(context,
-       MaterialPageRoute(builder: (context) => LoginScreen()),
-      (route) => false);
+  final String value;
+  const CreateLocation(this.value);
+}
+
+class _HomeScreenContentState extends State<_HomeScreenContent> {
+  final _formKey = GlobalKey<FormState>();
+  final _listNameTextFieldController = TextEditingController();
+  final _marketTextFieldController = TextEditingController();
+  bool _showError = false;
+  CreateLocation? _locateSelected;
+
+  void clearWidgets() {
+    _listNameTextFieldController.clear();
+    _marketTextFieldController.clear();
+    _locateSelected = null;
+    _showError = false;
+  }
+
+  // Create new shoppingList
+  void _createShoppingList() async {
+    if (_locateSelected != null) {
+      final viewModel = context.read<HomeViewModel>();
+      final success = await viewModel.createShoppingList(
+        ShoppingListModel(
+          createdAt: DateTime.now(),
+          listName: _listNameTextFieldController.text,
+          locationCreated: _locateSelected?.value ?? 'x',
+          marketName: _marketTextFieldController.text,
+        ),
+      );
+      Future.delayed(const Duration(seconds: 3));
+
+      if (mounted) {
+        Future.delayed(const Duration(seconds: 2));
+        if (success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Lista criada com sucesso!'),
+              backgroundColor: Color(0xFF2ECC71),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erro ao criar lista!'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        clearWidgets();
+      }
     }
   }
 
+  void _logout() async {
+    final viewModel = context.read<HomeViewModel>();
+    final success = await viewModel.signOut();
+    if (success) {
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (context) => LoginScreen()),
+        (route) => false,
+      );
+    }
+  }
+
+  void _showCreateListForm() {
+    final validatorHelper = Validator();
+    _locateSelected = null;
+    showModalBottomSheet(
+      context: context,
+      isDismissible: false,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => StatefulBuilder(
+        builder: (BuildContext context, setState) => Container(
+          padding: EdgeInsets.all(16),
+          height: _locateSelected == CreateLocation.mercado
+              ? MediaQuery.of(context).size.height * 0.6
+              : MediaQuery.of(context).size.height * 0.5,
+          child: Form(
+            key: _formKey,
+            child: Column(
+              //mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 5,
+                      alignment: AlignmentDirectional(1, 0),
+                      margin: EdgeInsets.only(bottom: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    Align(
+                      alignment: AlignmentGeometry.directional(-1, 0),
+                      child: Text(
+                        'Nova Lista',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey[800],
+                        ),
+                      ),
+                    ),
+                    Divider(color: Colors.grey[300]),
+                    SizedBox(height: 16),
+
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Nome',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        TextFormField(
+                          controller: _listNameTextFieldController,
+                          decoration: InputDecoration(
+                            hintText: 'Digite um nome para sua lista',
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide(
+                                color: Color(0xFF2ECC71),
+                                width: 2,
+                              ),
+                            ),
+                          ),
+                          validator: validatorHelper.validateListName,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 10),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Local de criação',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        SizedBox(height: 5),
+
+                        RadioGroup<CreateLocation>(
+                          groupValue: _locateSelected,
+                          onChanged: (CreateLocation? value) {
+                            setState(() {
+                              _locateSelected = value;
+                              _showError = false;
+                              print(_locateSelected);
+                            });
+                          },
+                          child: const Column(
+                            children: [
+                              RadioListTile(
+                                title: Text('Casa'),
+                                value: CreateLocation.casa,
+                              ),
+                              RadioListTile(
+                                title: Text('Mercado'),
+                                value: CreateLocation.mercado,
+                              ),
+                            ],
+                          ),
+                        ),
+                        SizedBox(height: 5),
+
+                        Visibility(
+                          visible: _showError == true,
+                          child: Container(
+                            margin: EdgeInsetsDirectional.only(start: 15),
+                            child: Text(
+                              style: TextStyle(
+                                color: Theme.of(context).colorScheme.error,
+                                fontSize: 12,
+                              ),
+                              'Campo obrigatório',
+                            ),
+                          ),
+                        ),
+
+                        // TEXTFIELD ENABLE SE RADIO = MERCADO
+                        Visibility(
+                          visible: _locateSelected == CreateLocation.mercado,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Mercado',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              SizedBox(height: 5),
+                              TextFormField(
+                                controller: _marketTextFieldController,
+                                decoration: InputDecoration(
+                                  hintText: 'Digite o nome do mercado',
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  focusedBorder: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    borderSide: BorderSide(
+                                      color: Color(0xFF2ECC71),
+                                      width: 2,
+                                    ),
+                                  ),
+                                ),
+                                validator:
+                                    _locateSelected == CreateLocation.mercado
+                                    ? validatorHelper.validateMarketName
+                                    : null,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                SizedBox(height: 16),
+
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        clearWidgets();
+                        Navigator.pop(context);
+                      },
+                      child: Text('Cancelar'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        if (!_formKey.currentState!.validate() ||
+                            _locateSelected == null) {
+                          setState(() {
+                            _showError = true;
+                          });
+                          return;
+                        }
+                        // CLOSE FORM
+                        Navigator.pop(context);
+
+                        showDialog(
+                          context: context,
+                          barrierDismissible:
+                              true, // Não permite fechar clicando fora
+                          builder: (context) => const ShoppingCartLoading(
+                            message: 'Criando lista',
+                          ),
+                        );
+
+                        _createShoppingList();
+                        await Future.delayed(const Duration(seconds: 2));
+                        Navigator.pop(context);
+                        // Fechar o loading
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Color(0xFF2ECC71),
+                      ),
+                      child: Text('Criar'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showProfileDialog() {
+    final viewModel = context.read<HomeViewModel>();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: Row(
           spacing: 10.0,
           children: [
@@ -50,8 +335,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
               backgroundColor: Color(0xFF2ECC71),
               radius: 25,
               child: Text(
-                
-                user?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                viewModel.getUserEmail().substring(0, 1).toUpperCase(),
                 style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
@@ -64,12 +348,9 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text('Perfil', style: TextStyle(fontSize: 18)),
                   Text(
-                    'Perfil',
-                    style: TextStyle(fontSize: 18),
-                  ),
-                  Text(
-                    user?.email ?? '',
+                    viewModel.getUserEmail(),
                     style: TextStyle(
                       fontSize: 12,
                       color: Colors.grey,
@@ -103,10 +384,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
             Divider(),
             ListTile(
               leading: Icon(Icons.logout, color: Colors.red),
-              title: Text(
-                'Sair',
-                style: TextStyle(color: Colors.red),
-              ),
+              title: Text('Sair', style: TextStyle(color: Colors.red)),
               onTap: () {
                 Navigator.pop(context);
                 _logout();
@@ -120,6 +398,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.read<HomeViewModel>();
     return Scaffold(
       backgroundColor: Colors.grey[100],
       appBar: AppBar(
@@ -152,7 +431,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
               child: CircleAvatar(
                 backgroundColor: Colors.white,
                 child: Text(
-                  user?.email?.substring(0, 1).toUpperCase() ?? 'U',
+                  viewModel.getUserEmail().substring(0, 1).toUpperCase(),
                   style: TextStyle(
                     color: Color(0xFF2ECC71),
                     fontWeight: FontWeight.bold,
@@ -197,7 +476,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                 ),
                 SizedBox(height: 8),
                 Text(
-                  user?.email ?? 'Usuário',
+                  viewModel.getUserEmail(),
                   style: TextStyle(
                     fontSize: 16,
                     color: Colors.white.withOpacity(0.9),
@@ -205,10 +484,13 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                 ),
                 SizedBox(height: 20),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
-                    _buildStatCard('Listas', '${viewModel.shoppingLists.length}', Icons.list_alt),
-                    _buildStatCard('Itens', '29', Icons.shopping_basket),
+                    _buildStatCard(
+                      'Listas',
+                      '${viewModel.shoppingLists.length}',
+                      Icons.list_alt,
+                    ),
                     _buildStatCard('Gasto', 'R\$ 656', Icons.attach_money),
                   ],
                 ),
@@ -236,9 +518,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                 },
                 icon: Icon(Icons.arrow_forward, size: 18),
                 label: Text('Ver todas'),
-                style: TextButton.styleFrom(
-                  foregroundColor: Color(0xFF2ECC71),
-                ),
+                style: TextButton.styleFrom(foregroundColor: Color(0xFF2ECC71)),
               ),
             ],
           ),
@@ -246,67 +526,8 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
           SizedBox(height: 12),
 
           // Lista de compras
-          ...viewModel.shoppingLists.map((list) => _buildShoppingListCard(list)),
-
-          SizedBox(height: 16),
-
-          // Card de ações rápidas
-          Container(
-            padding: EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: Offset(0, 5),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Ações Rápidas',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
-                ),
-                SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildQuickAction(
-                      icon: Icons.add_shopping_cart,
-                      label: 'Nova Lista',
-                      color: Color(0xFF2ECC71),
-                      onTap: () {
-                        // TODO: Criar nova lista
-                      },
-                    ),
-                    _buildQuickAction(
-                      icon: Icons.history,
-                      label: 'Histórico',
-                      color: Color(0xFF3498DB),
-                      onTap: () {
-                        // TODO: Ver histórico
-                      },
-                    ),
-                    _buildQuickAction(
-                      icon: Icons.analytics,
-                      label: 'Relatórios',
-                      color: Color(0xFF9B59B6),
-                      onTap: () {
-                        // TODO: Ver relatórios
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
+          ...viewModel.shoppingLists.map(
+            (list) => _buildShoppingListCard(list),
           ),
 
           SizedBox(height: 80), // Espaço para o FAB
@@ -314,17 +535,10 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Criar nova lista de compras
+          _showCreateListForm();
         },
         backgroundColor: Color(0xFF2ECC71),
-        icon: Icon(Icons.add, color: Colors.white),
-        label: Text(
-          'Nova Lista',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
+        label: Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -332,6 +546,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
   Widget _buildStatCard(String label, String value, IconData icon) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      width: 150,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.2),
         borderRadius: BorderRadius.circular(12),
@@ -391,11 +606,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                     color: (list['color'] as Color).withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    list['icon'],
-                    color: list['color'],
-                    size: 28,
-                  ),
+                  child: Icon(list['icon'], color: list['color'], size: 28),
                 ),
                 SizedBox(width: 16),
                 Expanded(
@@ -413,10 +624,7 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
                       SizedBox(height: 4),
                       Text(
                         '${list['items']} itens • R\$ ${list['total'].toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                       ),
                     ],
                   ),
@@ -430,39 +638,6 @@ class _HomeScreenContentState extends State<_HomeScreenContent> {
             ),
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildQuickAction({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        children: [
-          Container(
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Icon(icon, color: color, size: 28),
-          ),
-          SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[700],
-            ),
-          ),
-        ],
       ),
     );
   }

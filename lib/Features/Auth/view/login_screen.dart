@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:minhalistadecompras/Features/Auth/view/forgot_password_screen.dart';
-import 'package:minhalistadecompras/Features/Home/view/home_screen.dart';
+import 'package:minhalistadecompras/features/Auth/view/forgot_password_screen.dart';
+import 'package:minhalistadecompras/features/Home/view/home_screen.dart';
 import 'package:minhalistadecompras/Helper/validator.dart';
 import 'package:provider/provider.dart';
 import 'register_account_screen.dart';
@@ -33,6 +33,7 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _showErrorLogin = false ;
 
   @override
   void dispose() {
@@ -55,10 +56,17 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
       final success = await viewModel.signIn(emailController.text.trim(), passwordController.text.trim());
       await Future.delayed(const Duration(seconds: 1));
       if (success && mounted) {
+                setState(() {
+          _showErrorLogin = false;
+        });
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => HomeScreen()),
         );
+      } else {
+        setState(() {
+          _showErrorLogin = true;
+        });
       }
     }
   }
@@ -211,11 +219,19 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
                               ),
                               validator: validatorHelper.validatePassword,
                             ),
+                            const SizedBox(height: 10),
+                            Visibility(
+                              visible: _showErrorLogin,
+                              child: Text(
+                                viewModel.errorMessage ?? '',
+                                style: TextStyle(color: Colors.red),
+                              ),
+                            ),
                             const SizedBox(height: 24),
                             SizedBox(
                               width: double.infinity,
                               height: 50,
-                              child: ElevatedButton(
+                              child: ElevatedButton.icon(
                                 onPressed: viewModel.isLoading
                                     ? null
                                     : () => _signIn(viewModel),
@@ -226,7 +242,16 @@ class _LoginScreenContentState extends State<_LoginScreenContent> {
                                   ),
                                   elevation: 3,
                                 ),
-                                child: const Text(
+                                icon: viewModel.isLoading 
+                                ?  Container(
+                                      width: 24,
+                                      height: 24,
+                                      padding: const EdgeInsets.all(2.0), 
+                                      child: const CircularProgressIndicator(
+                                        color: Colors.white,
+                                        strokeWidth: 3,
+                                      )) : null,
+                                label: const Text(
                                   'Entrar',
                                   style: TextStyle(
                                     fontSize: 16,
